@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Interactive Dashboard</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    body {
+      font-family: Inter, system-ui, sans-serif;
+      background: #0f172a;
+      color: #e5e7eb;
+      margin: 0;
+      padding: 20px;
+    }
+
+    h1 {
+      margin-bottom: 10px;
+    }
+
+    .filters {
+      display: flex;
+      gap: 15px;
+      margin-bottom: 25px;
+    }
+
+    select {
+      padding: 10px;
+      border-radius: 8px;
+      border: none;
+      background: #1e293b;
+      color: white;
+      font-size: 14px;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap: 20px;
+    }
+
+    .card {
+      background: #020617;
+      padding: 20px;
+      border-radius: 16px;
+      box-shadow: 0 10px 30px rgba(0,0,0,.3);
+    }
+  </style>
+</head>
+<body>
+
+<h1>📊 Sales Dashboard</h1>
+
+<div class="filters">
+  <select id="regionFilter">
+    <option value="All">All Regions</option>
+  </select>
+
+  <select id="categoryFilter">
+    <option value="All">All Categories</option>
+  </select>
+</div>
+
+<div class="grid">
+  <div class="card">
+    <canvas id="barChart"></canvas>
+  </div>
+  <div class="card">
+    <canvas id="pieChart"></canvas>
+  </div>
+</div>
+
+<script>
+const rawData = [
+  { region: "North", category: "Electronics", sales: 12000, month: "Jan" },
+  { region: "North", category: "Furniture", sales: 8000, month: "Jan" },
+  { region: "South", category: "Electronics", sales: 15000, month: "Jan" },
+  { region: "South", category: "Furniture", sales: 6000, month: "Jan" },
+  { region: "North", category: "Electronics", sales: 10000, month: "Feb" },
+  { region: "South", category: "Furniture", sales: 9000, month: "Feb" },
+];
+
+const regionSelect = document.getElementById("regionFilter");
+const categorySelect = document.getElementById("categoryFilter");
+
+function populateFilters() {
+  [...new Set(rawData.map(d => d.region))].forEach(r => {
+    regionSelect.innerHTML += `<option value="${r}">${r}</option>`;
+  });
+
+  [...new Set(rawData.map(d => d.category))].forEach(c => {
+    categorySelect.innerHTML += `<option value="${c}">${c}</option>`;
+  });
+}
+
+function filterData() {
+  return rawData.filter(d =>
+    (regionSelect.value === "All" || d.region === regionSelect.value) &&
+    (categorySelect.value === "All" || d.category === categorySelect.value)
+  );
+}
+
+const barCtx = document.getElementById("barChart");
+const pieCtx = document.getElementById("pieChart");
+
+let barChart, pieChart;
+
+function updateCharts() {
+  const filtered = filterData();
+
+  const grouped = {};
+  filtered.forEach(d => {
+    grouped[d.month] = (grouped[d.month] || 0) + d.sales;
+  });
+
+  const labels = Object.keys(grouped);
+  const values = Object.values(grouped);
+
+  if (barChart) barChart.destroy();
+  if (pieChart) pieChart.destroy();
+
+  barChart = new Chart(barCtx, {
+    type: "bar",
+    data: {
+      labels,
+      datasets: [{
+        label: "Sales",
+        data: values,
+        borderRadius: 8
+      }]
+    },
+    options: {
+      plugins: { legend: { display: false }},
+      scales: {
+        y: { ticks: { color: "#e5e7eb" }},
+        x: { ticks: { color: "#e5e7eb" }}
+      }
+    }
+  });
+
+  pieChart = new Chart(pieCtx, {
+    type: "doughnut",
+    data: {
+      labels,
+      datasets: [{ data: values }]
+    },
+    options: {
+      cutout: "70%",
+      plugins: {
+        legend: { position: "bottom" }
+      }
+    }
+  });
+}
+
+populateFilters();
+updateCharts();
+
+regionSelect.addEventListener("change", updateCharts);
+categorySelect.addEventListener("change", updateCharts);
+</script>
+
+</body>
+</html>
